@@ -23,6 +23,8 @@ services:
       - run:/opt/printer_data/run
       - gcode:/opt/printer_data/gcodes
       - log:/opt/printer_data/logs
+    profiles:
+      - klipper
     labels:
       org.prind.service: klipper
 
@@ -50,11 +52,7 @@ services:
       - moonraker-db:/opt/printer_data/database
       - ./config:/opt/printer_data/config
     profiles:
-      - fluidd
-      - mainsail
-      - klipperscreen
-      - moonraker-telegram-bot
-      - mobileraker_companion
+      - klipper
     labels:
       org.prind.service: moonraker
       traefik.enable: true
@@ -175,6 +173,24 @@ services:
     labels:
       org.prind.service: moonraker-obico
 
+  spoolman:
+    image: ghcr.io/donkie/spoolman:latest
+    restart: unless-stopped
+    volumes:
+      - ./data:/home/app/.local/share/spoolman
+    #ports:
+    #  - "7912:8000"
+    profiles:
+      - spoolman
+    labels:
+      org.prind.service: spoolman
+      traefik.enable: true
+      traefik.http.services.spoolman.loadbalancer.server.port: 8000
+      traefik.http.routers.spoolman.rule: PathPrefix(`/spoolman`)
+      traefik.http.routers.spoolman.entrypoints: web
+      traefik.http.middlewares.spoolman.stripprefix.prefixes: /spoolman
+      traefik.http.routers.spoolman.middlewares: spoolman
+      
   ## Accompanying Services/Infra
   ##
 
@@ -190,7 +206,7 @@ services:
 
   ## Loadbalancer/Proxy
   traefik:
-    image: traefik:v2.5
+    image: traefik:latest
     command:
       - "--accesslog"
       - "--providers.docker=true"
